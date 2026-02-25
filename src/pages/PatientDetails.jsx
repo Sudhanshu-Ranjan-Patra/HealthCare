@@ -13,7 +13,9 @@ import {
   formatDateTime,
   getBpTone,
   getToneLabel,
+  getStatusColor,
   getVitalTone,
+  toTitleCase,
 } from "../utils/helpers";
 
 const API_BASE = "http://localhost:8000/api";
@@ -177,6 +179,12 @@ const PatientDetails = () => {
     patient?.lastActiveAt ||
     null;
   const dataIsStale = Boolean(liveData?.isStale || prediction?.isStale);
+  const previousRecords = Array.isArray(patient?.previousRecords)
+    ? patient.previousRecords
+    : [];
+  const familyMembers = Array.isArray(patient?.familyMembers)
+    ? patient.familyMembers
+    : [];
 
   return (
     <AppShell>
@@ -202,18 +210,56 @@ const PatientDetails = () => {
 
       <div className="space-y-6">
         <Card title="Patient Information">
-          <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
-            <div>
-              <p className="text-slate-500">Name</p>
-              <p className="mt-1 text-base font-semibold text-slate-900">{patient?.name || "N/A"}</p>
+          <div className="grid grid-cols-1 gap-6 text-sm lg:grid-cols-3">
+            <div className="flex items-center gap-4">
+              <img
+                src={patient?.photoUrl}
+                alt={patient?.name || "Patient"}
+                className="h-20 w-20 rounded-xl border border-slate-200 object-cover"
+              />
+              <div>
+                <p className="text-slate-500">Profile</p>
+                <p className="mt-1 text-base font-semibold text-slate-900">
+                  {patient?.name || "N/A"}
+                </p>
+                <span
+                  className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
+                    patient?.status
+                  )}`}
+                >
+                  {toTitleCase(patient?.status)}
+                </span>
+              </div>
             </div>
             <div>
               <p className="text-slate-500">Age</p>
-              <p className="mt-1 text-base font-semibold text-slate-900">{patient?.age || "N/A"}</p>
+              <p className="mt-1 text-base font-semibold text-slate-900">
+                {patient?.age || "N/A"}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500">Gender</p>
+              <p className="mt-1 text-base font-semibold text-slate-900">
+                {patient?.gender || "Unknown"}
+              </p>
             </div>
             <div>
               <p className="text-slate-500">Condition</p>
-              <p className="mt-1 text-base font-semibold text-slate-900">{patient?.condition || "N/A"}</p>
+              <p className="mt-1 text-base font-semibold text-slate-900">
+                {patient?.condition || "N/A"}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500">Phone Number</p>
+              <p className="mt-1 text-base font-semibold text-slate-900">
+                {patient?.phoneNumber || "N/A"}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500">Address</p>
+              <p className="mt-1 text-base font-semibold text-slate-900">
+                {patient?.address || "N/A"}
+              </p>
             </div>
           </div>
         </Card>
@@ -269,6 +315,64 @@ const PatientDetails = () => {
               </p>
             </div>
           </div>
+        </Card>
+
+        <Card title="Previous Records (Vitals History)">
+          {previousRecords.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="text-left text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-2 py-2">Recorded At</th>
+                    <th className="px-2 py-2">Heart Rate</th>
+                    <th className="px-2 py-2">SpO2</th>
+                    <th className="px-2 py-2">Temp</th>
+                    <th className="px-2 py-2">ECG Mean</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {previousRecords.map((row, index) => (
+                    <tr key={`${row.recordedAt}-${index}`} className="border-t border-slate-100">
+                      <td className="px-2 py-3 text-slate-700">{formatDateTime(row.recordedAt)}</td>
+                      <td className="px-2 py-3 text-slate-700">{row.heartRate ?? "--"} bpm</td>
+                      <td className="px-2 py-3 text-slate-700">{row.spo2 ?? "--"}%</td>
+                      <td className="px-2 py-3 text-slate-700">{row.temperature ?? "--"} C</td>
+                      <td className="px-2 py-3 text-slate-700">{row.ecgMean ?? "--"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">No previous records available.</p>
+          )}
+        </Card>
+
+        <Card title="Family Members / Emergency Contacts">
+          {familyMembers.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="text-left text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-2 py-2">Name</th>
+                    <th className="px-2 py-2">Relation</th>
+                    <th className="px-2 py-2">Phone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {familyMembers.map((member, index) => (
+                    <tr key={`${member.name}-${index}`} className="border-t border-slate-100">
+                      <td className="px-2 py-3 font-medium text-slate-800">{member.name}</td>
+                      <td className="px-2 py-3 text-slate-600">{member.relation}</td>
+                      <td className="px-2 py-3 text-slate-600">{member.phoneNumber}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">No family contact details available.</p>
+          )}
         </Card>
       </div>
     </AppShell>

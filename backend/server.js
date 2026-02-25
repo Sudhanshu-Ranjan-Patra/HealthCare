@@ -37,7 +37,25 @@ const patientSchema = new mongoose.Schema({
   patientId: { type: String, required: true, unique: true },
   name: String,
   age: Number,
+  gender: String,
+  status: String,
   condition: String,
+  address: String,
+  phoneNumber: String,
+  photoUrl: String,
+  familyMembers: [
+    {
+      name: String,
+      relation: String,
+      phoneNumber: String,
+    },
+  ],
+  medicalHistory: [
+    {
+      date: Date,
+      note: String,
+    },
+  ],
   lastActiveAt: Date,
 });
 
@@ -134,6 +152,32 @@ const getLatestReading = async (patientId) => {
     recordedAt: null,
   };
 };
+
+const titleCase = (value) => {
+  if (!value) return "Unknown";
+  return String(value)
+    .toLowerCase()
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const defaultPhotoUrl = (name) =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    name || "Patient"
+  )}&background=0f766e&color=ffffff`;
+
+const fallbackFamilyMembers = (patientId) => [
+  {
+    name: `Guardian ${patientId}`,
+    relation: "Parent",
+    phoneNumber: "+1-555-0101",
+  },
+  {
+    name: `Emergency Contact ${patientId}`,
+    relation: "Sibling",
+    phoneNumber: "+1-555-0112",
+  },
+];
 
 app.post("/api/esp32-data", async (req, res) => {
   const normalized = sanitizeLivePayload(req.body || {});
@@ -246,11 +290,39 @@ app.get("/api/patient/:id", async (req, res) => {
     const patient = await Patient.findOne({ patientId: id }).lean();
     const latestReading = await getLatestReading(id);
     const liveData = readingToLiveResponse(latestReading);
+    const recentReadings = await SensorReading.find({ patientId: id })
+      .sort({ recordedAt: -1 })
+      .limit(10)
+      .lean();
+
+    const previousRecords = recentReadings.map((row) => ({
+      recordedAt: row.recordedAt,
+      heartRate: row.heartRate,
+      spo2: row.spo2,
+      temperature: row.temperature,
+      ecgMean: row.ecgMean,
+    }));
 
     if (patient) {
       return res.json({
         ...patient,
         patientId: patient.patientId || id,
+        gender: titleCase(patient.gender || "Unknown"),
+        status: String(patient.status || "active").toLowerCase(),
+        address: patient.address || "Address not available",
+        phoneNumber: patient.phoneNumber || "+1-555-0000",
+        photoUrl: patient.photoUrl || defaultPhotoUrl(patient.name),
+        familyMembers:
+          Array.isArray(patient.familyMembers) &&
+          patient.familyMembers.length > 0
+            ? patient.familyMembers
+            : fallbackFamilyMembers(id),
+        medicalHistory:
+          Array.isArray(patient.medicalHistory) &&
+          patient.medicalHistory.length > 0
+            ? patient.medicalHistory
+            : [],
+        previousRecords,
         lastActiveAt: patient.lastActiveAt || liveData.lastUpdatedAt,
       });
     }
@@ -259,13 +331,63 @@ app.get("/api/patient/:id", async (req, res) => {
       patientId: id,
       name: `Patient ${id}`,
       age: null,
+      gender: "Unknown",
+      status: "active",
       condition: "Not available",
+      address: "Address not available",
+      phoneNumber: "+1-555-0000",
+      photoUrl: defaultPhotoUrl(`Patient ${id}`),
+      familyMembers: fallbackFamilyMembers(id),
+      medicalHistory: [],
+      previousRecords,
       lastActiveAt: liveData.lastUpdatedAt,
       isProfileComplete: false,
     });
   } catch (err) {
     console.error("Error fetching patient:", err.message);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/api/patients", async (_req, res) => {
+  try {
+    const patients = await Patient.find({})
+      .sort({ patientId: 1 })
+      .lean();
+
+    const latestReadings = await SensorReading.aggregate([
+      { $sort: { recordedAt: -1 } },
+      {
+        $group: {
+          _id: "$patientId",
+          lastVisit: { $first: "$recordedAt" },
+        },
+      },
+    ]);
+
+    const readingMap = latestReadings.reduce((acc, item) => {
+      acc[item._id] = item.lastVisit;
+      return acc;
+    }, {});
+
+    const normalized = patients.map((patient) => ({
+      id: patient.patientId,
+      patientId: patient.patientId,
+      name: patient.name || `Patient ${patient.patientId}`,
+      age: patient.age ?? null,
+      gender: titleCase(patient.gender || "Unknown"),
+      condition: patient.condition || "Not available",
+      status: String(patient.status || "active").toLowerCase(),
+      lastVisit:
+        patient.lastActiveAt ||
+        readingMap[patient.patientId] ||
+        null,
+    }));
+
+    res.json(normalized);
+  } catch (err) {
+    console.error("Error fetching patients:", err.message);
+    res.status(500).json({ message: "Unable to fetch patients" });
   }
 });
 

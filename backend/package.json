@@ -15,5 +15,8 @@
       "es2021": true
     },
     "extends": "eslint:recommended"
+  },
+  "scripts": {
+    "seed": "node seedDemoData.js"
   }
 }
