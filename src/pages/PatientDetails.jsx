@@ -16,12 +16,12 @@ const PatientDetails = () => {
 
   useEffect(() => {
     // 🔹 Fetch patient basic info
-    fetch(`http://localhost:5000/api/patient/${id}`)
+    fetch(`http://localhost:5001/api/patient/${id}`)
       .then((res) => res.json())
       .then((data) => setPatient(data));
 
     // 🔹 Fetch prediction
-    fetch(`http://localhost:5000/api/patient/${id}/prediction`)
+    fetch(`http://localhost:5001/api/patient/${id}/prediction`)
       .then((res) => res.json())
       .then((data) => setPrediction(data));
 
