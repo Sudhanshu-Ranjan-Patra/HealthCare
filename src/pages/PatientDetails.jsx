@@ -16,18 +16,18 @@ const PatientDetails = () => {
 
   useEffect(() => {
     // 🔹 Fetch patient basic info
-    fetch(`http://localhost:5000/api/patient/${id}`)
+    fetch(`http://localhost:8000/api/patient/${id}`)
       .then((res) => res.json())
       .then((data) => setPatient(data));
 
     // 🔹 Fetch prediction
-    fetch(`http://localhost:5000/api/patient/${id}/prediction`)
+    fetch(`http://localhost:8000/api/patient/${id}/prediction`)
       .then((res) => res.json())
       .then((data) => setPrediction(data));
 
     // 🔹 Fetch live ESP32 data
     const interval = setInterval(() => {
-      fetch(`http://localhost:5000/api/patient/${id}/live`)
+      fetch(`http://localhost:8000/api/patient/${id}/live`)
         .then((res) => res.json())
         .then((data) => setLiveData(data));
     }, 3000); // refresh every 3 seconds
