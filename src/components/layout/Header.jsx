@@ -1,57 +1,64 @@
-// src/components/layout/Header.jsx
-
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, PanelLeft } from "lucide-react";
 
 const Header = ({
   userName = "Dr. Ateeq",
   role = "Physician",
   notificationCount = 3,
 }) => {
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
-      
-      {/* 🔍 Search */}
-      <div className="relative w-96">
-        <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-          size={18}
-        />
-        <input
-          type="text"
-          placeholder="Search patients, appointments..."
-          className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-        />
+    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-6 lg:px-8">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className="inline-flex rounded-lg border border-slate-200 p-2 text-slate-500 lg:hidden"
+          aria-label="Open menu"
+        >
+          <PanelLeft size={18} />
+        </button>
+
+        <div className="relative hidden w-80 md:block">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Search patients, appointments..."
+            className="w-full rounded-lg bg-slate-100 py-2 pl-10 pr-4 text-sm outline-none ring-blue-500 transition focus:ring-2"
+          />
+        </div>
       </div>
 
-      {/* 🔔 Right Section */}
-      <div className="flex items-center gap-4">
-        
-        {/* Notifications */}
-        <div className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full cursor-pointer transition">
+      <div className="flex items-center gap-3 md:gap-4">
+        <p className="hidden text-xs font-medium text-slate-500 md:block">{today}</p>
+
+        <div className="relative cursor-pointer rounded-full p-2 text-slate-500 transition hover:bg-slate-100">
           <Bell size={20} />
           {notificationCount > 0 && (
-            <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white">
+            <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-red-500 text-[10px] text-white">
               {notificationCount}
             </span>
           )}
         </div>
 
-        {/* Profile */}
-        <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-          <div className="text-right">
-            <p className="text-sm font-bold text-slate-900">
-              {userName}
-            </p>
-            <p className="text-xs text-slate-500">
-              {role}
-            </p>
+        <div className="flex items-center gap-3 border-l border-slate-200 pl-3 md:pl-4">
+          <div className="hidden text-right sm:block">
+            <p className="text-sm font-bold text-slate-900">{userName}</p>
+            <p className="text-xs text-slate-500">{role}</p>
           </div>
 
           <img
             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
               userName
-            )}&background=f87171&color=fff`}
-            className="w-10 h-10 rounded-full"
+            )}&background=1e3a8a&color=fff`}
+            className="h-10 w-10 rounded-full"
             alt="profile"
           />
         </div>

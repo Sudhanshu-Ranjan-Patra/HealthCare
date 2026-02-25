@@ -1,4 +1,5 @@
 
+import { Activity } from "lucide-react";
 
 const StatCard = ({ label, value, trend, icon, trendDown }) => (
   <div className="bg-white p-5 rounded-2xl border border-slate-200 flex justify-between items-start shadow-sm">
@@ -10,7 +11,7 @@ const StatCard = ({ label, value, trend, icon, trendDown }) => (
       </p>
     </div>
     <div className="p-3 bg-blue-50 rounded-xl">
-      {icon}
+      {icon || <Activity className="text-blue-500" size={18} />}
     </div>
   </div>
 );

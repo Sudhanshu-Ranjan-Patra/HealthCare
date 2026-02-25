@@ -1,102 +1,103 @@
-// src/pages/Patients.jsx
-
 import { useMemo, useState } from "react";
-import Sidebar from "../components/layout/Sidebar";
-import Header from "../components/layout/Header";
 
+import AppShell from "../components/layout/AppShell";
 import StatCard from "../components/dashboard/StatCard";
 import PatientFilters from "../components/patients/PatientFilters";
 import PatientTable from "../components/patients/PatientTable";
+import LoadingState from "../components/states/LoadingState";
+import ErrorState from "../components/states/ErrorState";
 
 import useDashboardData from "../hooks/useDashboardData";
 
 const Patients = () => {
-  const { patients, loading } = useDashboardData();
+  const { patients, loading, error, refetch } = useDashboardData();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // 🔢 Calculate Stats
   const stats = useMemo(() => {
     const total = patients.length;
-    const discharged = patients.filter(
-      (p) => p.status === "discharged"
-    ).length;
-    const followUp = patients.filter(
-      (p) => p.status === "follow-up"
-    ).length;
+    const discharged = patients.filter((p) => p.status === "discharged").length;
+    const followUp = patients.filter((p) => p.status === "follow-up").length;
+    const active = patients.filter((p) => p.status === "active").length;
 
     return [
       {
         id: 1,
         label: "Total Patients",
         value: total,
+        trend: "+4%",
       },
       {
         id: 2,
-        label: "Discharged",
-        value: discharged,
+        label: "Active Cases",
+        value: active,
+        trend: "+2",
       },
       {
         id: 3,
         label: "Follow-up",
         value: followUp,
+        trend: "-1",
+        trendDown: true,
+      },
+      {
+        id: 4,
+        label: "Discharged",
+        value: discharged,
+        trend: "+3",
       },
     ];
   }, [patients]);
 
-  // 🔍 Filter Patients
   const filteredPatients = useMemo(() => {
     return patients.filter((patient) => {
-      const matchesSearch = patient.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
-      const matchesStatus =
-        statusFilter === "all" ||
-        patient.status === statusFilter;
+      const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || patient.status === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
   }, [patients, searchTerm, statusFilter]);
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        Loading Patients...
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-700">
-      <Sidebar />
+    <AppShell>
+      <section className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Patient Registry</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Manage active cases, follow-up schedules, and discharge progress.
+        </p>
+      </section>
 
-      <main className="flex-1 overflow-y-auto">
-        <Header />
+      {loading && <LoadingState label="Loading patient records..." />}
 
-        <div className="p-8 space-y-8">
+      {!loading && error && (
+        <ErrorState
+          title="Unable to load patient records"
+          message={error}
+          onRetry={refetch}
+        />
+      )}
 
-          {/* ================= TOP STATS ================= */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {!loading && !error && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {stats.map((stat) => (
               <StatCard key={stat.id} {...stat} />
             ))}
           </div>
 
-          {/* ================= FILTERS ================= */}
           <PatientFilters
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
+            resultCount={filteredPatients.length}
           />
 
-          {/* ================= TABLE ================= */}
           <PatientTable patients={filteredPatients} />
         </div>
-      </main>
-    </div>
+      )}
+    </AppShell>
   );
 };
 

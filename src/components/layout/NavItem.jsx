@@ -1,23 +1,39 @@
-// src/components/layout/NavItem.jsx
-
 import { NavLink } from "react-router-dom";
+
+const baseClassName =
+  "flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition";
 
 const NavItem = ({
   icon,
   label,
-  to = "/",
+  to,
   badge,
   badgeColor = "bg-blue-500",
+  disabled = false,
 }) => {
+  if (disabled || !to) {
+    return (
+      <div className={`${baseClassName} text-slate-400 cursor-not-allowed`} aria-disabled="true">
+        <div className="flex items-center gap-3">
+          {icon}
+          <span>{label}</span>
+        </div>
+
+        {badge && (
+          <span className={`text-white text-xs px-2 py-0.5 rounded-full ${badgeColor}`}>
+            {badge}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition
-        ${
-          isActive
-            ? "bg-blue-50 text-blue-600"
-            : "text-slate-600 hover:bg-slate-100"
+        `${baseClassName} ${
+          isActive ? "bg-blue-50 text-blue-600" : "text-slate-600 hover:bg-slate-100"
         }`
       }
     >
@@ -27,9 +43,7 @@ const NavItem = ({
       </div>
 
       {badge && (
-        <span
-          className={`text-white text-xs px-2 py-0.5 rounded-full ${badgeColor}`}
-        >
+        <span className={`text-white text-xs px-2 py-0.5 rounded-full ${badgeColor}`}>
           {badge}
         </span>
       )}

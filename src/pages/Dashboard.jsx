@@ -1,150 +1,194 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { TrendingUp, Calendar, Activity } from "lucide-react";
 
-import Sidebar from "../components/layout/Sidebar";
-import Header from "../components/layout/Header";
-
+import AppShell from "../components/layout/AppShell";
 import AnalyticItem from "../components/dashboard/AnalyticItem";
 import StatCard from "../components/dashboard/StatCard";
 import PerformanceCard from "../components/dashboard/PerformanceCard";
-import DashboardCards from "../components/dashboard/DashboardCards";
-
 import PatientTable from "../components/patients/PatientTable";
 import PatientFilters from "../components/patients/PatientFilters";
-
 import Card from "../components/shared/Card";
-
 import ScheduleRow from "../components/activity/ScheduleRow";
 import ActivityRow from "../components/activity/ActivityRow";
-
-import { TrendingUp, Calendar, Activity } from "lucide-react";
+import LoadingState from "../components/states/LoadingState";
+import ErrorState from "../components/states/ErrorState";
+import Badge from "../components/shared/Badge";
+import { formatDateTime } from "../utils/helpers";
 
 import useDashboardData from "../hooks/useDashboardData";
 
 const Dashboard = () => {
-    const { stats, analytics, patients, loading } = useDashboardData();
-    const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("all");
+  const { stats, analytics, patients, loading, error, refetch } = useDashboardData();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [liveSnapshot, setLiveSnapshot] = useState(null);
 
-    const filteredPatients = patients.filter((patient) => {
-        const matchesSearch =
-            patient.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredPatients = useMemo(() => {
+    return patients.filter((patient) => {
+      const matchesSearch = patient.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
-        const matchesStatus =
-            statusFilter === "all" || patient.status === statusFilter;
+      const matchesStatus = statusFilter === "all" || patient.status === statusFilter;
 
-        return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus;
     });
-    if (loading) {
-        return (
-            <div className="h-screen flex items-center justify-center">
-                <p className="text-lg font-semibold text-slate-500">
-                    Loading Dashboard...
-                </p>
+  }, [patients, searchTerm, statusFilter]);
+
+  const primaryPatientId = patients[0]?.id || "PT001";
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchSnapshot = async () => {
+      try {
+        const [liveRes, predRes] = await Promise.all([
+          fetch(`http://localhost:8000/api/patient/${primaryPatientId}/live`),
+          fetch(`http://localhost:8000/api/patient/${primaryPatientId}/prediction`),
+        ]);
+
+        const liveData = liveRes.ok ? await liveRes.json() : null;
+        const predData = predRes.ok ? await predRes.json() : null;
+
+        if (!active) return;
+
+        setLiveSnapshot({
+          heartRate: liveData?.heartRate ?? "--",
+          spo2: liveData?.spo2 ?? "--",
+          temperature: liveData?.temperature ?? "--",
+          bp:
+            predData?.systolic != null && predData?.diastolic != null
+              ? `${predData.systolic}/${predData.diastolic}`
+              : "--/--",
+          lastActive: liveData?.lastUpdatedAt || predData?.lastUpdatedAt || null,
+          isStale: Boolean(liveData?.isStale || predData?.isStale),
+        });
+      } catch {
+        if (!active) return;
+        setLiveSnapshot(null);
+      }
+    };
+
+    fetchSnapshot();
+    const timer = setInterval(fetchSnapshot, 10000);
+
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [primaryPatientId]);
+
+  return (
+    <AppShell>
+      <section className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Clinical Operations Dashboard</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Track patient health, monitor live vitals, and respond to risk signals quickly.
+        </p>
+      </section>
+
+      {loading && <LoadingState label="Loading dashboard data..." />}
+
+      {!loading && error && (
+        <ErrorState
+          title="Unable to load dashboard"
+          message={error}
+          onRetry={refetch}
+        />
+      )}
+
+      {!loading && !error && (
+        <div className="space-y-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                  <TrendingUp className="text-blue-500" size={20} />
+                  Monthly Analytics Overview
+                </h3>
+                <p className="text-xs text-slate-500">Comprehensive insights for February 2026</p>
+              </div>
             </div>
-        );
-    }
 
-    return (
-        <div className="flex min-h-screen bg-slate-50 font-sans text-slate-700">
-            {/* Sidebar */}
-            <Sidebar />
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+              {analytics.map((item) => (
+                <AnalyticItem key={item.id} {...item} />
+              ))}
+            </div>
+          </section>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto">
-                <Header />
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {stats.map((stat) => (
+              <StatCard key={stat.id} {...stat} />
+            ))}
+          </section>
 
-                <div className="p-8 space-y-8">
+          <section className="grid grid-cols-1 gap-6 xl:grid-cols-4">
+            <Card title="Today's Schedule" icon={<Calendar size={18} />} footer="View Full Schedule">
+              <div className="space-y-3">
+                <ScheduleRow label="Morning" count="8 patients" />
+                <ScheduleRow label="Afternoon" count="12 patients" />
+                <ScheduleRow label="Evening" count="8 patients" />
+              </div>
+            </Card>
 
-                    {/* ================== ANALYTICS SECTION ================== */}
-                    <section className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h3 className="text-lg font-bold flex items-center gap-2">
-                                    <TrendingUp className="text-blue-500" size={20} />
-                                    Monthly Analytics Overview
-                                </h3>
-                                <p className="text-xs text-slate-400">
-                                    Comprehensive insights for October 2025
-                                </p>
-                            </div>
-                            <button className="text-blue-600 text-sm font-semibold hover:underline">
-                                View Details
-                            </button>
-                        </div>
+            <Card title="Recent Activity" icon={<Activity size={18} />}>
+              <div className="space-y-4">
+                <ActivityRow dot="bg-emerald-500" label="Lab results uploaded" time="2 minutes ago" />
+                <ActivityRow dot="bg-orange-400" label="Appointment rescheduled" time="15 minutes ago" />
+                <ActivityRow dot="bg-blue-500" label="New patient registered" time="1 hour ago" />
+              </div>
+            </Card>
 
-                        <div className="grid grid-cols-3 gap-8">
-                            {analytics.map((item) => (
-                                <AnalyticItem key={item.id} {...item} />
-                            ))}
-                        </div>
-                    </section>
+            <PerformanceCard />
 
-                    {/* ================== STATS SECTION ================== */}
-                    <div className="grid grid-cols-4 gap-6">
-                        {stats.map((stat) => (
-                            <StatCard key={stat.id} {...stat} />
-                        ))}
+            <Card title="Last Known Vitals">
+              {liveSnapshot ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-slate-500">HR</p>
+                      <p className="text-lg font-semibold text-slate-900">{liveSnapshot.heartRate} bpm</p>
                     </div>
-
-                    {/* ================== SECONDARY CARDS ================== */}
-                    <div className="grid grid-cols-3 gap-6">
-
-                        {/* Schedule Card */}
-                        <Card
-                            title="Today's Schedule"
-                            icon={<Calendar size={18} />}
-                            footer="View Full Schedule"
-                        >
-                            <div className="space-y-3">
-                                <ScheduleRow label="Morning" count="8 patients" />
-                                <ScheduleRow label="Afternoon" count="12 patients" />
-                                <ScheduleRow label="Evening" count="8 patients" />
-                            </div>
-                        </Card>
-
-                        {/* Activity Card */}
-                        <Card
-                            title="Recent Activity"
-                            icon={<Activity size={18} />}
-                            footer=""
-                        >
-                            <div className="space-y-4">
-                                <ActivityRow
-                                    dot="bg-emerald-500"
-                                    label="Lab results uploaded"
-                                    time="2 minutes ago"
-                                />
-                                <ActivityRow
-                                    dot="bg-orange-400"
-                                    label="Appointment rescheduled"
-                                    time="15 minutes ago"
-                                />
-                                <ActivityRow
-                                    dot="bg-blue-500"
-                                    label="New patient registered"
-                                    time="1 hour ago"
-                                />
-                            </div>
-                        </Card>
-
-                        {/* Performance Card */}
-                        <PerformanceCard />
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-slate-500">SpO2</p>
+                      <p className="text-lg font-semibold text-slate-900">{liveSnapshot.spo2}%</p>
                     </div>
-
-                    {/* ================== PATIENT TABLE ================== */}
-                    <PatientFilters
-                        searchTerm={searchTerm}
-                        setSearchTerm={setSearchTerm}
-                        statusFilter={statusFilter}
-                        setStatusFilter={setStatusFilter}
-                    />
-
-                    <PatientTable patients={filteredPatients} />
-
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-slate-500">Temp</p>
+                      <p className="text-lg font-semibold text-slate-900">{liveSnapshot.temperature} C</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-slate-500">BP</p>
+                      <p className="text-lg font-semibold text-slate-900">{liveSnapshot.bp} mmHg</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Last Active: {formatDateTime(liveSnapshot.lastActive)}
+                  </p>
+                  {liveSnapshot.isStale && <Badge tone="warning">Device Offline</Badge>}
                 </div>
-            </main>
+              ) : (
+                <p className="text-sm text-slate-500">No snapshot available yet.</p>
+              )}
+            </Card>
+          </section>
+
+          <section className="space-y-4">
+            <PatientFilters
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              resultCount={filteredPatients.length}
+            />
+
+            <PatientTable patients={filteredPatients} />
+          </section>
         </div>
-    );
+      )}
+    </AppShell>
+  );
 };
 
 export default Dashboard;

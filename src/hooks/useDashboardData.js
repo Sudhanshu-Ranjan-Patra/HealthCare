@@ -12,15 +12,27 @@ const useDashboardData = () => {
   const [analytics, setAnalytics] = useState([]);
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadData = () => {
+    setLoading(true);
+    setError("");
+
+    setTimeout(() => {
+      try {
+        setStats(statsData);
+        setAnalytics(analyticsData);
+        setPatients(patientsData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    }, 500);
+  };
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setStats(statsData);
-      setAnalytics(analyticsData);
-      setPatients(patientsData);
-      setLoading(false);
-    }, 500);
+    loadData();
   }, []);
 
   return {
@@ -28,6 +40,8 @@ const useDashboardData = () => {
     analytics,
     patients,
     loading,
+    error,
+    refetch: loadData,
   };
 };
 
