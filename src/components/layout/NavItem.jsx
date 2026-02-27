@@ -13,7 +13,10 @@ const NavItem = ({
 }) => {
   if (disabled || !to) {
     return (
-      <div className={`${baseClassName} text-slate-400 cursor-not-allowed`} aria-disabled="true">
+      <div
+        className={`${baseClassName} pointer-events-none text-slate-400 cursor-not-allowed`}
+        aria-disabled="true"
+      >
         <div className="flex items-center gap-3">
           {icon}
           <span>{label}</span>

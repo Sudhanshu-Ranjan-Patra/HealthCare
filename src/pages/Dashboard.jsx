@@ -14,6 +14,7 @@ import LoadingState from "../components/states/LoadingState";
 import ErrorState from "../components/states/ErrorState";
 import Badge from "../components/shared/Badge";
 import { formatDateTime } from "../utils/helpers";
+import { apiFetch } from "../utils/api";
 
 import useDashboardData from "../hooks/useDashboardData";
 
@@ -21,6 +22,7 @@ const Dashboard = () => {
   const { stats, analytics, patients, loading, error, refetch } = useDashboardData();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
   const [liveSnapshot, setLiveSnapshot] = useState(null);
 
   const filteredPatients = useMemo(() => {
@@ -30,10 +32,13 @@ const Dashboard = () => {
         .includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === "all" || patient.status === statusFilter;
+      const matchesRisk =
+        riskFilter === "all" ||
+        String(patient.riskLevel || "unknown").toLowerCase() === riskFilter;
 
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus && matchesRisk;
     });
-  }, [patients, searchTerm, statusFilter]);
+  }, [patients, searchTerm, statusFilter, riskFilter]);
 
   const primaryPatientId = patients[0]?.id || "PT001";
 
@@ -42,13 +47,10 @@ const Dashboard = () => {
 
     const fetchSnapshot = async () => {
       try {
-        const [liveRes, predRes] = await Promise.all([
-          fetch(`http://localhost:8000/api/patient/${primaryPatientId}/live`),
-          fetch(`http://localhost:8000/api/patient/${primaryPatientId}/prediction`),
+        const [liveData, predData] = await Promise.all([
+          apiFetch(`/admin/patient/${primaryPatientId}/live`),
+          apiFetch(`/admin/patient/${primaryPatientId}/prediction`),
         ]);
-
-        const liveData = liveRes.ok ? await liveRes.json() : null;
-        const predData = predRes.ok ? await predRes.json() : null;
 
         if (!active) return;
 
@@ -70,7 +72,7 @@ const Dashboard = () => {
     };
 
     fetchSnapshot();
-    const timer = setInterval(fetchSnapshot, 10000);
+    const timer = setInterval(fetchSnapshot, 3000);
 
     return () => {
       active = false;
@@ -180,6 +182,8 @@ const Dashboard = () => {
               setSearchTerm={setSearchTerm}
               statusFilter={statusFilter}
               setStatusFilter={setStatusFilter}
+              riskFilter={riskFilter}
+              setRiskFilter={setRiskFilter}
               resultCount={filteredPatients.length}
             />
 

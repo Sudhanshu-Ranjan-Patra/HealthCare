@@ -1,10 +1,9 @@
-import { Search, Bell, PanelLeft } from "lucide-react";
+import { Search, Bell, PanelLeft, LogOut } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
-const Header = ({
-  userName = "Dr. Ateeq",
-  role = "Physician",
-  notificationCount = 3,
-}) => {
+const Header = ({ notificationCount = 0 }) => {
+  const { user, logout } = useAuth();
+
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -24,13 +23,10 @@ const Header = ({
         </button>
 
         <div className="relative hidden w-80 md:block">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={18}
-          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="Search patients, appointments..."
+            placeholder="Search..."
             className="w-full rounded-lg bg-slate-100 py-2 pl-10 pr-4 text-sm outline-none ring-blue-500 transition focus:ring-2"
           />
         </div>
@@ -39,7 +35,7 @@ const Header = ({
       <div className="flex items-center gap-3 md:gap-4">
         <p className="hidden text-xs font-medium text-slate-500 md:block">{today}</p>
 
-        <div className="relative cursor-pointer rounded-full p-2 text-slate-500 transition hover:bg-slate-100">
+        <div className="relative rounded-full p-2 text-slate-500 transition hover:bg-slate-100">
           <Bell size={20} />
           {notificationCount > 0 && (
             <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-red-500 text-[10px] text-white">
@@ -48,16 +44,23 @@ const Header = ({
           )}
         </div>
 
+        <button
+          type="button"
+          onClick={logout}
+          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+        >
+          <LogOut size={14} />
+          Logout
+        </button>
+
         <div className="flex items-center gap-3 border-l border-slate-200 pl-3 md:pl-4">
           <div className="hidden text-right sm:block">
-            <p className="text-sm font-bold text-slate-900">{userName}</p>
-            <p className="text-xs text-slate-500">{role}</p>
+            <p className="text-sm font-bold text-slate-900">{user?.name || "User"}</p>
+            <p className="text-xs text-slate-500">{user?.role || ""}</p>
           </div>
 
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-              userName
-            )}&background=1e3a8a&color=fff`}
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "User")}&background=1e3a8a&color=fff`}
             className="h-10 w-10 rounded-full"
             alt="profile"
           />

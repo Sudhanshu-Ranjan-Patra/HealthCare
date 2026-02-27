@@ -8,6 +8,7 @@ import Badge from "../components/shared/Badge";
 import Button from "../components/shared/Button";
 import LoadingState from "../components/states/LoadingState";
 import ErrorState from "../components/states/ErrorState";
+import { apiFetch } from "../utils/api";
 
 import {
   formatDateTime,
@@ -17,8 +18,6 @@ import {
   getVitalTone,
   toTitleCase,
 } from "../utils/helpers";
-
-const API_BASE = "http://localhost:8000/api";
 
 const MetricCard = ({ label, value, unit, icon, tone = "neutral" }) => {
   const toneClasses = {
@@ -54,27 +53,15 @@ const PatientDetails = () => {
   const [error, setError] = useState("");
 
   const fetchPatient = useCallback(async () => {
-    const res = await fetch(`${API_BASE}/patient/${id}`);
-    if (!res.ok) {
-      throw new Error("Patient details could not be loaded.");
-    }
-    return res.json();
+    return apiFetch(`/admin/patient/${id}`);
   }, [id]);
 
   const fetchLiveData = useCallback(async () => {
-    const res = await fetch(`${API_BASE}/patient/${id}/live`);
-    if (!res.ok) {
-      throw new Error("Live data endpoint is unavailable.");
-    }
-    return res.json();
+    return apiFetch(`/admin/patient/${id}/live`);
   }, [id]);
 
   const fetchPrediction = useCallback(async () => {
-    const res = await fetch(`${API_BASE}/patient/${id}/prediction`);
-    if (!res.ok) {
-      throw new Error("Prediction service is unavailable.");
-    }
-    return res.json();
+    return apiFetch(`/admin/patient/${id}/prediction`);
   }, [id]);
 
   const loadPageData = useCallback(async () => {
@@ -145,7 +132,7 @@ const PatientDetails = () => {
     };
 
     loadPageData();
-    const intervalId = setInterval(refreshRealtimeData, 5000);
+    const intervalId = setInterval(refreshRealtimeData, 3000);
 
     return () => {
       active = false;

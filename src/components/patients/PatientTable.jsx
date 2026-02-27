@@ -2,6 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { formatDate, getStatusColor, toTitleCase } from "../../utils/helpers";
 import Avatar from "../shared/Avatar";
 
+const getRiskClass = (riskLevel) => {
+  const normalized = String(riskLevel || "").toLowerCase();
+  if (normalized === "high") return "bg-red-100 text-red-700";
+  if (normalized === "normal") return "bg-emerald-100 text-emerald-700";
+  if (normalized === "low") return "bg-amber-100 text-amber-700";
+  return "bg-slate-100 text-slate-700";
+};
+
 const PatientTable = ({ patients = [] }) => {
   const navigate = useNavigate();
 
@@ -15,6 +23,7 @@ const PatientTable = ({ patients = [] }) => {
               <th className="px-6 py-3 text-left">Age</th>
               <th className="px-6 py-3 text-left">Gender</th>
               <th className="px-6 py-3 text-left">Condition</th>
+              <th className="px-6 py-3 text-left">Risk</th>
               <th className="px-6 py-3 text-left">Last Visit</th>
               <th className="px-6 py-3 text-left">Status</th>
             </tr>
@@ -25,7 +34,7 @@ const PatientTable = ({ patients = [] }) => {
               patients.map((patient) => (
                 <tr
                   key={patient.id}
-                  onClick={() => navigate(`/patients/${patient.id}`)}
+                  onClick={() => navigate(`/admin/patients/${patient.id}`)}
                   className="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50"
                 >
                   <td className="px-6 py-4">
@@ -41,6 +50,11 @@ const PatientTable = ({ patients = [] }) => {
                   <td className="px-6 py-4">{patient.age ?? "N/A"}</td>
                   <td className="px-6 py-4">{toTitleCase(patient.gender)}</td>
                   <td className="px-6 py-4">{patient.condition ?? "N/A"}</td>
+                  <td className="px-6 py-4">
+                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${getRiskClass(patient.riskLevel)}`}>
+                      {toTitleCase(patient.riskLevel || "Unknown")}
+                    </span>
+                  </td>
                   <td className="px-6 py-4">{formatDate(patient.lastVisit)}</td>
 
                   <td className="px-6 py-4">
@@ -56,10 +70,10 @@ const PatientTable = ({ patients = [] }) => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="px-6 py-16 text-center">
+                <td colSpan="7" className="px-6 py-16 text-center">
                   <p className="text-base font-medium text-slate-700">No patients found</p>
                   <p className="mt-1 text-sm text-slate-500">
-                    Try changing the search term or status filter.
+                    Try changing the search term, status, or risk filter.
                   </p>
                 </td>
               </tr>

@@ -6,13 +6,16 @@ const PatientFilters = ({
   setSearchTerm = () => {},
   statusFilter = "all",
   setStatusFilter = () => {},
+  riskFilter = "all",
+  setRiskFilter = () => {},
   resultCount,
 }) => {
-  const hasFilters = Boolean(searchTerm) || statusFilter !== "all";
+  const hasFilters = Boolean(searchTerm) || statusFilter !== "all" || riskFilter !== "all";
 
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
+    setRiskFilter("all");
   };
 
   return (
@@ -42,6 +45,19 @@ const PatientFilters = ({
             <option value="active">Active</option>
             <option value="follow-up">Follow-up</option>
             <option value="discharged">Discharged</option>
+          </select>
+
+          <select
+            value={riskFilter}
+            onChange={(e) => setRiskFilter(e.target.value)}
+            className="rounded-lg bg-slate-100 px-4 py-2 text-sm outline-none ring-blue-500 transition focus:ring-2"
+          >
+            <option value="all">All Risk</option>
+            <option value="high">High</option>
+            <option value="normal">Normal</option>
+            <option value="low">Low</option>
+            <option value="unavailable">Unavailable</option>
+            <option value="unknown">Unknown</option>
           </select>
 
           {hasFilters && (

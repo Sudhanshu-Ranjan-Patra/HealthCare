@@ -14,6 +14,7 @@ const Patients = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
 
   const stats = useMemo(() => {
     const total = patients.length;
@@ -54,10 +55,13 @@ const Patients = () => {
     return patients.filter((patient) => {
       const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "all" || patient.status === statusFilter;
+      const matchesRisk =
+        riskFilter === "all" ||
+        String(patient.riskLevel || "unknown").toLowerCase() === riskFilter;
 
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus && matchesRisk;
     });
-  }, [patients, searchTerm, statusFilter]);
+  }, [patients, searchTerm, statusFilter, riskFilter]);
 
   return (
     <AppShell>
@@ -91,6 +95,8 @@ const Patients = () => {
             setSearchTerm={setSearchTerm}
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
+            riskFilter={riskFilter}
+            setRiskFilter={setRiskFilter}
             resultCount={filteredPatients.length}
           />
 

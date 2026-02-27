@@ -1,33 +1,66 @@
-// src/App.jsx
-
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import PatientDetails from "./pages/PatientDetails";
+import Login from "./pages/Login";
+import FamilyDashboard from "./pages/FamilyDashboard";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { useAuth } from "./context/AuthContext";
+
+const DefaultRoute = () => {
+  const { isAuthenticated, user } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={user?.role === "FAMILY" ? "/family/dashboard" : "/admin/dashboard"} replace />;
+};
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Default Route */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<DefaultRoute />} />
+        <Route path="/login" element={<Login />} />
 
-        {/* Dashboard Route */}
-        <Route path="/dashboard" element={<Dashboard />} />
-
-        {/* Future Routes Example */}
-        <Route path="/patients" element={<Patients />} />
-        {/* <Route path="/settings" element={<Settings />} /> */}
-        <Route path="/patients/:id" element={<PatientDetails />} />
-        {/* 404 Fallback */}
         <Route
-          path="*"
+          path="/admin/dashboard"
           element={
-            <div className="h-screen flex items-center justify-center text-xl font-semibold">
-              404 - Page Not Found
-            </div>
+            <ProtectedRoute allowedRoles={["ADMIN", "DOCTOR"]}>
+              <Dashboard />
+            </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/admin/patients"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN", "DOCTOR"]}>
+              <Patients />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/patients/:id"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN", "DOCTOR"]}>
+              <PatientDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/family/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["FAMILY"]}>
+              <FamilyDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<DefaultRoute />} />
       </Routes>
     </Router>
   );

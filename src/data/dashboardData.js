@@ -63,6 +63,7 @@ export const patientsData = [
     gender: "Male",
     condition: "Hypertension",
     status: "active",
+    riskLevel: "Normal",
     lastVisit: "2026-02-15",
   },
   {
@@ -72,6 +73,7 @@ export const patientsData = [
     gender: "Male",
     condition: "Diabetes Type 2",
     status: "follow-up",
+    riskLevel: "High",
     lastVisit: "2026-01-10",
   },
   {
@@ -81,6 +83,7 @@ export const patientsData = [
     gender: "male",
     condition: "Asthma",
     status: "active",
+    riskLevel: "Low",
     lastVisit: "2025-12-28",
   },
 ];
